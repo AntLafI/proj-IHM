@@ -1,8 +1,22 @@
+#pragma once
 #include "SvgBase.h"
 #include "Point2D.h"
 
 class SVGRect : public SVGBase{
-	Point2D xy;
-	Point2D size;
-	float rx,ry;//corner radius
+public:
+	Point2D xy,size,cornerRad;
+
+	std::string get_xml_node() const override{
+		std:stringstream ss();
+		ss << "<rect "
+		   << "\"x=\"" << xy.x << "\" "
+		   << "\"width=\"" << size.x << "\" "
+		   << "\"y=\"" << xy.y << "\" "
+		   << "\"height=\"" << size.y << "\" "
+		   << "\"rx=\"" << cornerRad.x << "\" "
+		   << "\"ry=\"" << cornerRad.y << "\""
+		   << "/>" ;
+		return ss.str();
+	}
+
 };
