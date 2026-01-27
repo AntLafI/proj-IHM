@@ -57,8 +57,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/gomme.png</normaloff>../Images/gomme.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/gomme.png</normaloff>:/new/icons/images/gomme.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -87,8 +87,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/1266212.svg</normaloff>../Images/1266212.svg</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/1266212.svg</normaloff>:/new/icons/images/1266212.svg</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -118,8 +118,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/palette.png</normaloff>../Images/palette.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/palette.png</normaloff>:/new/icons/images/palette.png</iconset>
      </property>
     </widget>
     <widget class="QToolButton" name="toolButton_4">
@@ -142,8 +142,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/calque.png</normaloff>../Images/calque.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/calque.png</normaloff>:/new/icons/images/calque.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -172,8 +172,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Téléchargements/carre.png</normaloff>../Téléchargements/carre.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/carre.png</normaloff>:/new/icons/images/carre.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -215,8 +215,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/circle.png</normaloff>../Images/circle.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/circle.png</normaloff>:/new/icons/images/circle.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -245,8 +245,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/selector_tool.png</normaloff>../Images/selector_tool.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/selector_tool.png</normaloff>:/new/icons/images/selector_tool.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -275,8 +275,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/zoom_tool.png</normaloff>../Images/zoom_tool.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/zoom_tool.png</normaloff>:/new/icons/images/zoom_tool.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -305,8 +305,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/unzoom.png</normaloff>../Images/unzoom.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/unzoom.png</normaloff>:/new/icons/images/unzoom.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -335,8 +335,8 @@ border: 1px solid #d0d0d0;
       <string>...</string>
      </property>
      <property name="icon">
-      <iconset>
-       <normaloff>../Images/tletter.png</normaloff>../Images/tletter.png</iconset>
+      <iconset resource="icons.qrc">
+       <normaloff>:/new/icons/images/tletter.png</normaloff>:/new/icons/images/tletter.png</iconset>
      </property>
      <property name="iconSize">
       <size>
@@ -359,6 +359,8 @@ border: 1px solid #d0d0d0;
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
- <resources/>
+ <resources>
+  <include location="icons.qrc"/>
+ </resources>
  <connections/>
 </ui>

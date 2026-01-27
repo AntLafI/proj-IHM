@@ -29,6 +29,7 @@ RESOURCES += \
 DISTFILES += \
     ../Images/1266212.svg \
     ../Images/calque.png \
+    ../Images/carre.png \
     ../Images/circle.png \
     ../Images/gomme.png \
     ../Images/palette.png \

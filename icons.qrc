@@ -1,3 +1,14 @@
 <RCC>
-    <qresource prefix="/new/prefix1"/>
+    <qresource prefix="/new/icons">
+        <file>images/1266212.svg</file>
+        <file>images/calque.png</file>
+        <file>images/gomme.png</file>
+        <file>images/palette.png</file>
+        <file>images/selector_tool.png</file>
+        <file>images/tletter.png</file>
+        <file>images/unzoom.png</file>
+        <file>images/zoom_tool.png</file>
+        <file>images/circle.png</file>
+        <file>images/carre.png</file>
+    </qresource>
 </RCC>
