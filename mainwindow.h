@@ -21,6 +21,7 @@ private slots:
     void onActionSaveTriggered();
     void onActionSaveAsTriggered();
     void onActionCloseProjectTriggered();
+    void onActionAbout_VectorialDrawTriggered();
 
 private:
     bool saveToFile(const QString &fileName);

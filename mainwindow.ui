@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Vectorial Drawing</string>
+   <string>VectorialDraw</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <widget class="QScrollArea" name="scrollArea">
@@ -51,23 +51,13 @@
     <property name="title">
      <string>File</string>
     </property>
-    <widget class="QMenu" name="menuClose">
-     <property name="title">
-      <string>Close</string>
-     </property>
-     <property name="icon">
-      <iconset theme="application-exit"/>
-     </property>
-     <property name="toolTipsVisible">
-      <bool>false</bool>
-     </property>
-     <addaction name="actionClose_Project"/>
-     <addaction name="actionClose_App"/>
-    </widget>
+    <addaction name="actionNew"/>
     <addaction name="actionOpen"/>
     <addaction name="actionSave"/>
     <addaction name="actionSave_As"/>
-    <addaction name="menuClose"/>
+    <addaction name="actionClose_Project"/>
+    <addaction name="separator"/>
+    <addaction name="actionClose_App"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -81,6 +71,10 @@
     </property>
     <addaction name="actionUndo"/>
     <addaction name="actionRedo"/>
+    <addaction name="separator"/>
+    <addaction name="actionCut"/>
+    <addaction name="actionCopy"/>
+    <addaction name="actionPaste"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -169,6 +163,9 @@
    </property>
   </action>
   <action name="actionClose_Project">
+   <property name="icon">
+    <iconset theme="edit-clear"/>
+   </property>
    <property name="text">
     <string>Close Project</string>
    </property>
@@ -177,11 +174,64 @@
    </property>
   </action>
   <action name="actionClose_App">
+   <property name="icon">
+    <iconset theme="system-shutdown"/>
+   </property>
    <property name="text">
-    <string>Close App</string>
+    <string>Quit VectorialDraw</string>
+   </property>
+   <property name="iconText">
+    <string>Quit VectorialDraw</string>
+   </property>
+   <property name="toolTip">
+    <string>Quit VectorialDraw</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+Q</string>
+   </property>
+  </action>
+  <action name="actionNew">
+   <property name="icon">
+    <iconset theme="document-new"/>
+   </property>
+   <property name="text">
+    <string>New</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
+  </action>
+  <action name="actionCut">
+   <property name="icon">
+    <iconset theme="edit-cut"/>
+   </property>
+   <property name="text">
+    <string>Cut</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+X</string>
+   </property>
+  </action>
+  <action name="actionCopy">
+   <property name="icon">
+    <iconset theme="edit-copy"/>
+   </property>
+   <property name="text">
+    <string>Copy</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+C</string>
+   </property>
+  </action>
+  <action name="actionPaste">
+   <property name="icon">
+    <iconset theme="edit-paste"/>
+   </property>
+   <property name="text">
+    <string>Paste</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
    </property>
   </action>
  </widget>

@@ -23,6 +23,8 @@ MainWindow::MainWindow(QWidget *parent)
             this, &MainWindow::onActionSaveAsTriggered);
     connect(ui->actionClose_Project, &QAction::triggered,
             this, &MainWindow::onActionCloseProjectTriggered);
+    connect(ui->actionabout_VectorialDraw, &QAction::triggered,
+            this, &MainWindow::onActionAbout_VectorialDrawTriggered);
 }
 
 MainWindow::~MainWindow()
@@ -213,4 +215,25 @@ QString MainWindow::forceExtension(const QString &fileName, const QString &ext)
 {
     QFileInfo info(fileName);
     return info.path() + "/" + info.completeBaseName() + "." + ext;
+}
+
+void MainWindow::onActionAbout_VectorialDrawTriggered()
+{
+    QString text = tr(
+        "<b>VectorialDraw</b><br><br>"
+        "Application de dessin vectoriel développée avec Qt.<br><br>"
+        "<b>Fonctionnalités actuelles :</b><br>"
+        "- Ouverture et sauvegarde de fichiers<br>"
+        "- Format propriétaire (.vdraw)<br>"
+        "- Import / export d’images standards<br><br>"
+        "<b>Formats supportés :</b><br>"
+        "- VectorialDraw (*.vdraw)<br>"
+        "- PNG (*.png)<br>"
+        "- JPEG (*.jpg)<br>"
+        "- BMP (*.bmp)<br>"
+        "- SVG (*.svg)<br><br>"
+        "Projet IHM"
+        );
+
+    QMessageBox::about(this, tr("About VectorialDraw"), text);
 }
