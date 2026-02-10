@@ -1,5 +1,7 @@
 #include "mainwindow.h"
 
+#include "renderarea.h"
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
