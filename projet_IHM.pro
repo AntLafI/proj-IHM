@@ -10,14 +10,17 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
+    mainpage.cpp \
     mainwindow.cpp \
     renderarea.cpp
 
 HEADERS += \
+    mainpage.h \
     mainwindow.h \
     renderarea.h
 
 FORMS += \
+    mainpage.ui \
     mainwindow.ui \
     renderarea.ui
 
