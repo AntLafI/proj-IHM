@@ -10,19 +10,19 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    mainpage.cpp \
     mainwindow.cpp \
-    renderarea.cpp
+    renderarea.cpp \
+    scrollbar.cpp
 
 HEADERS += \
-    mainpage.h \
     mainwindow.h \
-    renderarea.h
+    renderarea.h \
+    scrollbar.h
 
 FORMS += \
-    mainpage.ui \
     mainwindow.ui \
-    renderarea.ui
+    renderarea.ui \
+    scrollbar.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

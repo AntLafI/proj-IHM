@@ -5,8 +5,8 @@
 #include <QWidget>
 #include <QVBoxLayout>
 
-mainPage::mainPage(QWidget *parent)
-    : QWiget(parent)
+mainPage::mainPageQWidget *parent)
+    : QWidget(parent)
     , ui(new Ui::mainPage)
 {
     ui->setupUi(this);

@@ -5,46 +5,32 @@
 
 #include <QScrollArea>
 
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QMainWindow>
+
+#include "scrollbar.h"
+#include "renderarea.h"
+
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent),ui(new Ui::MainWindow)
 {
-    setupUi(this);
+    ui->setupUi(this);
 
-    QScrollArea *scrollArea = new QScrollArea() ;
-    QWidget *container = new QWidget();
-    QVBoxLayout *layout = new QVBoxLayout(container);
+    QHBoxLayout *mainLayout = ui->horizontalLayout;
 
-    scrollArea->setBackgroundRole(QPalette::Dark);
+    ScrollBar *myScrollBar = new ScrollBar(this);
+    RenderArea *myRenderArea = new RenderArea(this);
 
-    QStringList logo = {":/new/icons/images/1266212.svg",
-                         ":/new/icons/images/calque.png",
-                         ":/new/icons/images/carre.png",
-                         ":/new/icons/images/circle.png",
-                         ":/new/icons/images/gomme.png",
-                         ":/new/icons/images/palette.png",
-                         ":/new/icons/images/selector_tool.png",
-                         ":/new/icons/images/tletter.png",
-                         ":/new/icons/images/unzoom.png",
-                        ":/new/icons/images/zoom_tool.png"} ;
+    mainLayout->addWidget(myScrollBar); // Index 0
+    mainLayout->addWidget(myRenderArea);  // Index 1
 
+    mainLayout->setStretch(0, 3);
+    mainLayout->setStretch(1, 7);
 
-    for(const QString &path : logo) {
-        QPushButton *button = new QPushButton(this);
-
-        button-> setIcon((QIcon(path))) ;
-        button->setIconSize(QSize(50, 50));
-        button->setFixedSize(60, 60);
-
-        layout->addWidget(button);
-
-    }
-
-    this->scrollArea->setWidget(container);
-    this->scrollArea->setWidgetResizable(true);
-    this->scrollArea->setBackgroundRole(QPalette::Dark);
 
 }
 
 MainWindow::~MainWindow(){ ;
-
+    delete ui ;
 }

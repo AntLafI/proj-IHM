@@ -1,19 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>mainPage</class>
- <widget class="QWidget" name="mainPage">
+ <class>ScrollBar</class>
+ <widget class="QWidget" name="ScrollBar">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>599</width>
-    <height>491</height>
+    <width>400</width>
+    <height>300</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout"/>
  </widget>
  <resources/>
  <connections/>
