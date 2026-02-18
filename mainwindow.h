@@ -5,7 +5,7 @@
 
 #include <QMainWindow>
 
-class MainWindow : public QMainWindow, private Ui::MainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
