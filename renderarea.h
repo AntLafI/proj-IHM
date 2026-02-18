@@ -9,6 +9,9 @@
 #include <QList>
 #include <QPainter>
 #include <QPainterPath>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QGraphicsItem>
 #include "line.h"
 
 enum PenType {
@@ -16,7 +19,7 @@ enum PenType {
     eraser
 };
 
-class RenderArea : public QWidget, private Ui::RenderArea
+class RenderArea : public QGraphicsView, private Ui::RenderArea
 {
     Q_OBJECT
 
@@ -24,17 +27,24 @@ public:
     explicit RenderArea(QWidget *parent = nullptr);
 
 protected:
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent  *event) override;
+    void mouseMoveEvent(QMouseEvent  *event) override;
+    void mouseReleaseEvent(QMouseEvent  *event) override;
     void paintEvent(QPaintEvent *event) override;
+    void UpdateView();
 
 private:
+    QGraphicsView view;
+    QList<QGraphicsItem *> itemList;
+    QList<QPoint> currentShape;
+    QGraphicsPolygonItem* currentItem;
+
     QPainter painter;
     QPen currentPen;
     QList<Line> lines;
     QPainterPath currentLine;
     PenType penType;
+    int lastI;
 
 };
 

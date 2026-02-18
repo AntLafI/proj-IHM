@@ -8,6 +8,7 @@ MainWindow::MainWindow(QWidget *parent)
     setupUi(this);
     RenderArea *ra = new RenderArea();
     this->setCentralWidget(ra);
+    this->show();
 }
 
 MainWindow::~MainWindow() {}
