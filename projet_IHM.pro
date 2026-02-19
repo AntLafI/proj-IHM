@@ -11,13 +11,19 @@ CONFIG += c++17
 SOURCES += \
     imageviewer.cpp \
     main.cpp \
+    Theme/AppStyle.cpp \
+    Theme/Theme.cpp \
     mainwindow.cpp
 
 HEADERS += \
-    imageviewer.h \
-    mainwindow.h
+    Theme/PaletteThemeMapper.h \
+    Theme/StyleHelpers/CompisiteElem/MenuDrawer.h \
+    Theme/StyleHelpers/PrimitiveElem/CheckboxDrawer.h \
     mainwindow.h \
     Theme/Theme.h \
+    Theme/AppStyle.h \
+    imageviewer.h \
+    mainwindow.h
 
 FORMS += \
     mainwindow.ui
