@@ -1,4 +1,5 @@
-#pragma once
+#ifndef THEMELOADER_H
+#define THEMELOADER_H
 #include "Theme.h"
 #include <string>
 #include <vector>
@@ -7,12 +8,25 @@
 #include <filesystem>
 
 class ThemeLoader{
+private:
+    static bool is_theme_file(std::filesystem::directory_entry file, std::string &filenameOut){
+        if(!file.is_regular_file()) return false;
+        if(file.path().extension() != ".txt") return false;
+        auto pathStr = file.path().filename().string();
+        const std::string prefix = "theme_";
+        if(pathStr.rfind(prefix,0) == 0){
+            filenameOut = pathStr.substr(prefix.size());
+            return true;
+        }
+        return false;
+    }
 public:
-    /*
+
     static void get_local_themes(std::vector<std::string> &themes){
         for (const auto &file : std::filesystem::directory_iterator("./")){
-            if(is_theme_file(file)){
-                themes.push_back(path_to_name(file));
+            std::string filename;
+            if(is_theme_file(file,filename)){
+                themes.push_back(filename);
             }
         }
     }
@@ -40,7 +54,7 @@ public:
         const int colorCount = lines.size() - 1;
         const int colorTotal = sizeof(Theme) / sizeof(QColor);
         for(;iter < colorCount; iter++){
-            outputTheme.colors[iter] = QColor::fromString(lines[iter + 1])
+            outputTheme.colors[iter] = QColor::fromString(lines[iter + 1]);
         }
         if(iter != colorCount){
             ArrayTheme defAT = {Theme::Default()};
@@ -50,12 +64,6 @@ public:
         }
         return outputTheme.t;
 	}
-    */
-private:
 
-    /*
-    bool is_theme_file(auto file){
-        return false;
-    }
-*/
-}
+};
+#endif

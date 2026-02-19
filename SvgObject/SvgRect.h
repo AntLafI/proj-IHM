@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SVGRECT_H
+#define SVGRECT_H
 #include "SvgBase.h"
 #include "Point2D.h"
 
@@ -7,7 +8,7 @@ public:
 	Point2D xy,size,cornerRad;
 
 	std::string get_xml_node() const override{
-		std:stringstream ss();
+        std::stringstream ss;
 		ss << "<rect "
 		   << "\"x=\"" << xy.x << "\" "
 		   << "\"width=\"" << size.x << "\" "
@@ -20,3 +21,4 @@ public:
 	}
 
 };
+#endif
