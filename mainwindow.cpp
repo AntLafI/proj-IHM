@@ -18,6 +18,7 @@
 #include <QDir>
 #include <QBuffer>
 #include <QCloseEvent>
+#include <QtSvg/QSvgGenerator>
 
 #include "scrollbar.h"
 #include "renderarea.h"
@@ -52,6 +53,7 @@ MainWindow::MainWindow(QWidget *parent)
                 }
                 updateActions();
             });
+
     connect(m_tabWidget, &QTabWidget::currentChanged, this,
             [this](int){
                 auto *area = qobject_cast<RenderArea*>(m_tabWidget->currentWidget());
@@ -64,13 +66,17 @@ MainWindow::MainWindow(QWidget *parent)
                     connect(ui->actionRedo, &QAction::triggered, area, &RenderArea::redo);
                     connect(area, &RenderArea::canUndoChanged, ui->actionUndo, &QAction::setEnabled);
                     connect(area, &RenderArea::canRedoChanged, ui->actionRedo, &QAction::setEnabled);
-                    connect(area, &RenderArea::modified, this, [this]{ m_isModified = true; });
+                    connect(area, &RenderArea::modified, this, [this, area]{
+                        m_isModified = true;
+                        area->setProperty("modified", true);
+                    });
                     ui->actionUndo->setEnabled(area->canUndo());
                     ui->actionRedo->setEnabled(area->canRedo());
                 } else {
                     ui->actionUndo->setEnabled(false);
                     ui->actionRedo->setEnabled(false);
                 }
+
                 updateActions();
             });
 
@@ -101,6 +107,21 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::closeEvent(QCloseEvent *event)
+{
+    int prev = m_tabWidget->currentIndex();
+    for (int i = 0; i < m_tabWidget->count(); ++i) {
+        m_tabWidget->setCurrentIndex(i);
+        if (!maybeSave()) {
+            m_tabWidget->setCurrentIndex(prev);
+            event->ignore();
+            return;
+        }
+    }
+    m_tabWidget->setCurrentIndex(prev);
+    event->accept();
+}
+
 void MainWindow::updateActions()
 {
     const bool hasDoc = (m_tabWidget && m_tabWidget->count() > 0);
@@ -119,8 +140,8 @@ void MainWindow::onActionNewTriggered()
     const QString title = QString("Untitled %1").arg(m_untitledCount++);
     m_tabWidget->addTab(area, title);
     m_tabWidget->setCurrentWidget(area);
+    area->setProperty("modified", false);
 
-    // nouvel onglet vierge : non modifié
     m_image = QImage(800, 600, QImage::Format_ARGB32_Premultiplied);
     m_image.fill(Qt::white);
 
@@ -193,6 +214,8 @@ void MainWindow::onActionOpenTriggered()
         m_image = QImage(800, 600, QImage::Format_ARGB32_Premultiplied);
         m_image.fill(Qt::white);
 
+        area->setProperty("modified", false);
+
     } else {
 
         QImage img;
@@ -206,6 +229,7 @@ void MainWindow::onActionOpenTriggered()
         area->setBackgroundImage(img);
         int idx = m_tabWidget->addTab(area, info.fileName());
         m_tabWidget->setCurrentIndex(idx);
+        area->setProperty("modified", false);
     }
 
     m_currentFilePath = fileName;
@@ -226,12 +250,29 @@ void MainWindow::onActionSaveTriggered()
         return;
     }
 
-    if (!saveToFile(m_currentFilePath)) {
+    const QString ext = QFileInfo(m_currentFilePath).suffix().toLower();
+    bool ok = false;
+
+    if (ext == "vdraw") {
+        ok = saveToFile(m_currentFilePath);
+    } else if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp") {
+        ok = exportImage(m_currentFilePath);
+    } else if (ext == "svg") {
+        ok = exportSvg(m_currentFilePath);
+    } else {
+        QMessageBox::warning(this, tr("Erreur"),
+                             tr("Extension non supportée pour 'Save'. Utilisez 'Save As'."));
+        return;
+    }
+
+    if (!ok) {
         QMessageBox::warning(this, tr("Erreur"),
                              tr("Impossible d'enregistrer."));
         return;
     }
 
+    QWidget *w = m_tabWidget->currentWidget();
+    if (w) w->setProperty("modified", false);
     m_isModified = false;
 
     int idx = m_tabWidget->currentIndex();
@@ -275,6 +316,8 @@ void MainWindow::onActionSaveAsTriggered()
     bool ok = false;
     if (ext == "vdraw")
         ok = saveToFile(fileName);
+    else if (ext == "svg")
+        ok = exportSvg(fileName);
     else
         ok = exportImage(fileName);
 
@@ -285,6 +328,9 @@ void MainWindow::onActionSaveAsTriggered()
     }
 
     m_currentFilePath = fileName;
+
+    QWidget *w = m_tabWidget->currentWidget();
+    if (w) w->setProperty("modified", false);
     m_isModified = false;
 
     int idx = m_tabWidget->currentIndex();
@@ -304,7 +350,14 @@ void MainWindow::onActionCloseProjectTriggered()
 
 bool MainWindow::maybeSave()
 {
-    if (m_tabWidget->count() == 0 || !m_isModified)
+    if (m_tabWidget->count() == 0)
+        return true;
+
+    QWidget *w = m_tabWidget->currentWidget();
+    if (!w) return true;
+
+    const bool modified = w->property("modified").toBool();
+    if (!modified)
         return true;
 
     auto reply = QMessageBox::question(
@@ -397,6 +450,26 @@ bool MainWindow::exportImage(const QString &fileName)
     return img.save(fileName);
 }
 
+bool MainWindow::exportSvg(const QString &fileName)
+{
+    QWidget *w = m_tabWidget->currentWidget();
+    auto *area = qobject_cast<RenderArea*>(w);
+    if (!area) return false;
+
+    QSvgGenerator gen;
+    gen.setFileName(fileName);
+    gen.setSize(area->size());
+    gen.setViewBox(QRect(QPoint(0,0), area->size()));
+    gen.setTitle("VectorialDraw");
+    gen.setDescription("Export SVG");
+
+    QPainter p;
+    if (!p.begin(&gen)) return false;
+    area->renderToPainter(&p, area->size());
+    p.end();
+    return true;
+}
+
 QString MainWindow::forceExtension(const QString &fileName, const QString &ext)
 {
     QFileInfo info(fileName);
@@ -420,23 +493,15 @@ void MainWindow::onActionAbout_VectorialDrawTriggered()
         "- Sauvegarde au format propriétaire (.vdraw) avec image embarquée<br>"
         "- Export aux formats PNG, JPG, BMP, SVG<br><br>"
 
-        "<b>Formats supportés :</b><br>"
-        "- VectorialDraw (*.vdraw)<br>"
-        "- PNG (*.png)<br>"
-        "- JPEG (*.jpg)<br>"
-        "- BMP (*.bmp)<br>"
-        "- SVG (*.svg)<br><br>"
+                       "<b>Formats supportés :</b><br>"
+                       "- VectorialDraw (*.vdraw)<br>"
+                       "- PNG (*.png)<br>"
+                       "- JPEG (*.jpg)<br>"
+                       "- BMP (*.bmp)<br>"
+                       "- SVG (*.svg)<br><br>"
 
-        "Projet IHM – 2025/2026"
+                       "Projet IHM – 2025/2026"
         );
 
     QMessageBox::about(this, tr("About VectorialDraw"), text);
-}
-
-void MainWindow::closeEvent(QCloseEvent *e)
-{
-    if (!maybeSave())
-        e->ignore();
-    else
-        e->accept();
 }

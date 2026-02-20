@@ -19,6 +19,7 @@ RenderArea::RenderArea(QWidget *parent)
     pen.setColor(Qt::green);
     pen.setWidth(10);
 
+    m_baseSize = QSize(); // pas encore fixé
     notifyState();
 }
 
@@ -67,6 +68,9 @@ void RenderArea::redo(){
 }
 
 void RenderArea::mousePressEvent(QMouseEvent *event){
+    if (m_baseSize.isEmpty())
+        m_baseSize = this->size(); // fixe la taille de référence au premier tracé
+
     m_currentStroke.clear();
     m_currentStroke << event->pos();
     update();
@@ -91,21 +95,40 @@ void RenderArea::mouseReleaseEvent(QMouseEvent *event){
     }
 }
 
-void RenderArea::paintEvent(QPaintEvent *event){
+void RenderArea::paintEvent(QPaintEvent *){
     painter.begin(this);
+    renderToPainter(&painter, size());
+    painter.end();
+}
 
+void RenderArea::renderToPainter(QPainter *p, const QSize &targetSize) const{
+    const int tw = qMax(1, targetSize.width());
+    const int th = qMax(1, targetSize.height());
+
+    // Fond : s’adapte toujours à la cible
     if (!m_background.isNull())
-        painter.drawImage(rect(), m_background);
+        p->drawImage(QRect(QPoint(0,0), targetSize), m_background);
 
-    painter.setPen(pen);
+    // Si pas encore de baseSize (pas de tracé), utiliser la taille cible
+    const int bw = m_baseSize.width()  > 0 ? m_baseSize.width()  : tw;
+    const int bh = m_baseSize.height() > 0 ? m_baseSize.height() : th;
+
+    const qreal sx = static_cast<qreal>(tw) / static_cast<qreal>(bw);
+    const qreal sy = static_cast<qreal>(th) / static_cast<qreal>(bh);
+
+    p->save();
+    p->setRenderHint(QPainter::Antialiasing, true);
+    p->scale(sx, sy);
+
+    p->setPen(pen);
 
     for (const QPolygon &poly : m_strokes)
-        painter.drawPoints(poly);
+        p->drawPoints(poly);
 
     if (!m_currentStroke.isEmpty())
-        painter.drawPoints(m_currentStroke);
+        p->drawPoints(m_currentStroke);
 
-    painter.end();
+    p->restore();
 }
 
 void RenderArea::notifyState(){

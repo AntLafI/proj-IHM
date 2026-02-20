@@ -20,6 +20,9 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+protected:
+    void closeEvent(QCloseEvent *event) override;
+
 private slots:
     void onActionNewTriggered();
     void onActionOpenTriggered();
@@ -31,11 +34,11 @@ private slots:
 private:
     bool saveToFile(const QString &fileName);
     bool exportImage(const QString &fileName);
+    bool exportSvg(const QString &fileName);
     bool maybeSave();
     void closeCurrentDocument();
     QString forceExtension(const QString &fileName, const QString &ext);
     void updateActions();
-    void closeEvent(QCloseEvent *e) override;
 
 private:
     Ui::MainWindow *ui;

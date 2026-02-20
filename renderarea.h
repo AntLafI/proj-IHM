@@ -8,6 +8,7 @@
 #include <QImage>
 #include <QPolygon>
 #include <QVector>
+#include <QSize>
 
 class RenderArea : public QWidget, private Ui::RenderArea
 {
@@ -20,6 +21,7 @@ public:
     void clearBackground();
     bool canUndo() const;
     bool canRedo() const;
+    void renderToPainter(QPainter *p, const QSize &size) const;
 
 public slots:
     void undo();
@@ -47,6 +49,9 @@ private:
 
     bool m_lastCanUndo = false;
     bool m_lastCanRedo = false;
+
+    // Taille de référence du canvas au moment du premier tracé
+    QSize m_baseSize;
 
     void notifyState();
 };
