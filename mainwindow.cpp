@@ -2,13 +2,11 @@
 
 #include <QPushButton>
 #include <QPixmap>
-
 #include <QScrollArea>
-
 #include <QWidget>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QMainWindow>
-
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QFile>
@@ -16,28 +14,74 @@
 #include <QJsonObject>
 #include <QLabel>
 #include <QFileInfo>
+#include <QTabWidget>
+#include <QDir>
+#include <QBuffer>
+#include <QCloseEvent>
 
 #include "scrollbar.h"
 #include "renderarea.h"
+#include "imageviewer.h"
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent),ui(new Ui::MainWindow)
+    : QMainWindow(parent), ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
-    //QHBoxLayout *mainLayout = new QHBoxLayout(ui->centralwidget);
-    QHBoxLayout *mainLayout = ui->horizontalLayout_3 ;
+    QHBoxLayout *mainLayout = ui->horizontalLayout_3;
 
     ScrollBar *myScrollBar = new ScrollBar(this);
-    RenderArea *myRenderArea = new RenderArea(this);
+    m_tabWidget = new QTabWidget(this);
+    m_tabWidget->setTabsClosable(true);
 
-    mainLayout->addWidget(myScrollBar); // Index 0
-    mainLayout->addWidget(myRenderArea);  // Index 1
+    connect(m_tabWidget, &QTabWidget::tabCloseRequested, this,
+            [this](int idx){
+                int prev = m_tabWidget->currentIndex();
+                m_tabWidget->setCurrentIndex(idx);
+                if (!maybeSave()) {
+                    m_tabWidget->setCurrentIndex(prev);
+                    return;
+                }
+                QWidget *w = m_tabWidget->widget(idx);
+                m_tabWidget->removeTab(idx);
+                delete w;
+                m_hasDocument = (m_tabWidget->count() > 0);
+                if (!m_hasDocument) {
+                    m_currentFilePath.clear();
+                    m_isModified = false;
+                }
+                updateActions();
+            });
+    connect(m_tabWidget, &QTabWidget::currentChanged, this,
+            [this](int){
+                auto *area = qobject_cast<RenderArea*>(m_tabWidget->currentWidget());
+
+                ui->actionUndo->disconnect();
+                ui->actionRedo->disconnect();
+
+                if (area) {
+                    connect(ui->actionUndo, &QAction::triggered, area, &RenderArea::undo);
+                    connect(ui->actionRedo, &QAction::triggered, area, &RenderArea::redo);
+                    connect(area, &RenderArea::canUndoChanged, ui->actionUndo, &QAction::setEnabled);
+                    connect(area, &RenderArea::canRedoChanged, ui->actionRedo, &QAction::setEnabled);
+                    connect(area, &RenderArea::modified, this, [this]{ m_isModified = true; });
+                    ui->actionUndo->setEnabled(area->canUndo());
+                    ui->actionRedo->setEnabled(area->canRedo());
+                } else {
+                    ui->actionUndo->setEnabled(false);
+                    ui->actionRedo->setEnabled(false);
+                }
+                updateActions();
+            });
+
+    mainLayout->addWidget(myScrollBar);
+    mainLayout->addWidget(m_tabWidget);
 
     mainLayout->setStretch(0, 3);
     mainLayout->setStretch(1, 7);
 
-
+    connect(ui->actionNew, &QAction::triggered,
+            this, &MainWindow::onActionNewTriggered);
     connect(ui->actionOpen, &QAction::triggered,
             this, &MainWindow::onActionOpenTriggered);
     connect(ui->actionSave, &QAction::triggered,
@@ -49,15 +93,44 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->actionabout_VectorialDraw, &QAction::triggered,
             this, &MainWindow::onActionAbout_VectorialDrawTriggered);
 
-
+    updateActions();
 }
 
-MainWindow::~MainWindow(){ ;
-    delete ui ;
+MainWindow::~MainWindow()
+{
+    delete ui;
 }
 
+void MainWindow::updateActions()
+{
+    const bool hasDoc = (m_tabWidget && m_tabWidget->count() > 0);
+    ui->actionSave->setEnabled(hasDoc);
+    ui->actionSave_As->setEnabled(hasDoc);
+    ui->actionClose_Project->setEnabled(hasDoc);
 
-// ======================= OPEN =======================
+    auto *area = qobject_cast<RenderArea*>(m_tabWidget ? m_tabWidget->currentWidget() : nullptr);
+    ui->actionUndo->setEnabled(area && area->canUndo());
+    ui->actionRedo->setEnabled(area && area->canRedo());
+}
+
+void MainWindow::onActionNewTriggered()
+{
+    RenderArea *area = new RenderArea(this);
+    const QString title = QString("Untitled %1").arg(m_untitledCount++);
+    m_tabWidget->addTab(area, title);
+    m_tabWidget->setCurrentWidget(area);
+
+    // nouvel onglet vierge : non modifié
+    m_image = QImage(800, 600, QImage::Format_ARGB32_Premultiplied);
+    m_image.fill(Qt::white);
+
+    m_currentFilePath.clear();
+    m_isModified = false;
+    m_hasDocument = true;
+
+    updateActions();
+    statusBar()->showMessage(tr("Nouveau document"), 2000);
+}
 
 void MainWindow::onActionOpenTriggered()
 {
@@ -76,41 +149,76 @@ void MainWindow::onActionOpenTriggered()
 
     QFileInfo info(fileName);
 
-    if (info.suffix() == "vdraw") {
+    if (info.suffix().compare("vdraw", Qt::CaseInsensitive) == 0) {
+
         QFile file(fileName);
         if (!file.open(QIODevice::ReadOnly)) {
             QMessageBox::warning(this, tr("Erreur"),
                                  tr("Impossible d'ouvrir le fichier."));
             return;
         }
+        const QByteArray data = file.readAll();
         file.close();
+
+        QJsonParseError err;
+        QJsonDocument doc = QJsonDocument::fromJson(data, &err);
+
+        if (err.error != QJsonParseError::NoError || !doc.isObject()) {
+            QMessageBox::warning(this, tr("Erreur"),
+                                 tr("Fichier .vdraw invalide."));
+            return;
+        }
+
+        QJsonObject root = doc.object();
+        const QString pngB64 = root.value("image").toString();
+
+        RenderArea *area = new RenderArea(this);
+
+        if (!pngB64.isEmpty()) {
+            QByteArray pngBytes = QByteArray::fromBase64(pngB64.toUtf8());
+            QImage img;
+            if (img.loadFromData(pngBytes, "PNG")) {
+                area->setBackgroundImage(img);
+            } else {
+                QMessageBox::warning(this, tr("Erreur"),
+                                     tr("Image embarquée invalide."));
+                delete area;
+                return;
+            }
+        }
+
+        int idx = m_tabWidget->addTab(area, info.completeBaseName());
+        m_tabWidget->setCurrentIndex(idx);
+
         m_image = QImage(800, 600, QImage::Format_ARGB32_Premultiplied);
         m_image.fill(Qt::white);
+
     } else {
-        if (!m_image.load(fileName)) {
+
+        QImage img;
+        if (!img.load(fileName)) {
             QMessageBox::warning(this, tr("Erreur"),
                                  tr("Format non supporté."));
             return;
         }
-    }
 
-    QLabel *label = new QLabel;
-    label->setPixmap(QPixmap::fromImage(m_image));
-    label->setAlignment(Qt::AlignCenter);
-    ui->horizontalLayout_3->addWidget(label);
+        RenderArea *area = new RenderArea(this);
+        area->setBackgroundImage(img);
+        int idx = m_tabWidget->addTab(area, info.fileName());
+        m_tabWidget->setCurrentIndex(idx);
+    }
 
     m_currentFilePath = fileName;
     m_isModified = false;
     m_hasDocument = true;
 
+    updateActions();
     statusBar()->showMessage(tr("Document ouvert"), 2000);
 }
 
-// ======================= SAVE =======================
-
 void MainWindow::onActionSaveTriggered()
 {
-    if (!m_hasDocument)
+    if (m_tabWidget->count() == 0)
         return;
 
     if (m_currentFilePath.isEmpty()) {
@@ -121,11 +229,23 @@ void MainWindow::onActionSaveTriggered()
     if (!saveToFile(m_currentFilePath)) {
         QMessageBox::warning(this, tr("Erreur"),
                              tr("Impossible d'enregistrer."));
+        return;
     }
+
+    m_isModified = false;
+
+    int idx = m_tabWidget->currentIndex();
+    if (idx >= 0)
+        m_tabWidget->setTabText(idx, QFileInfo(m_currentFilePath).fileName());
+
+    statusBar()->showMessage(tr("Document enregistré"), 2000);
 }
 
 void MainWindow::onActionSaveAsTriggered()
 {
+    if (m_tabWidget->count() == 0)
+        return;
+
     QString selectedFilter;
 
     QString fileName = QFileDialog::getSaveFileName(
@@ -166,9 +286,13 @@ void MainWindow::onActionSaveAsTriggered()
 
     m_currentFilePath = fileName;
     m_isModified = false;
-}
 
-// ======================= CLOSE PROJECT =======================
+    int idx = m_tabWidget->currentIndex();
+    if (idx >= 0)
+        m_tabWidget->setTabText(idx, QFileInfo(fileName).fileName());
+
+    statusBar()->showMessage(tr("Document enregistré"), 2000);
+}
 
 void MainWindow::onActionCloseProjectTriggered()
 {
@@ -180,7 +304,7 @@ void MainWindow::onActionCloseProjectTriggered()
 
 bool MainWindow::maybeSave()
 {
-    if (!m_hasDocument || !m_isModified)
+    if (m_tabWidget->count() == 0 || !m_isModified)
         return true;
 
     auto reply = QMessageBox::question(
@@ -202,26 +326,25 @@ bool MainWindow::maybeSave()
 
 void MainWindow::closeCurrentDocument()
 {
-    QLayoutItem *item = ui->horizontalLayout_3->takeAt(0);
-
-    if (item != nullptr) {
-        if (item->widget()) {
-            item->widget()->hide(); // On le cache
-            // ou
-            delete item->widget();  // On le supprime si on n'en a plus besoin
-        }
-        delete item; // Il faut toujours supprimer l'item du layout lui-même
+    QWidget *w = m_tabWidget->currentWidget();
+    if (w) {
+        int idx = m_tabWidget->currentIndex();
+        m_tabWidget->removeTab(idx);
+        delete w;
     }
 
-    m_image = QImage();
-    m_currentFilePath.clear();
-    m_isModified = false;
-    m_hasDocument = false;
+    if (m_tabWidget->count() == 0) {
+        m_image = QImage();
+        m_currentFilePath.clear();
+        m_isModified = false;
+        m_hasDocument = false;
+    } else {
+        m_hasDocument = true;
+    }
 
+    updateActions();
     statusBar()->showMessage(tr("Document fermé"), 2000);
 }
-
-// ======================= SAVE HELPERS =======================
 
 bool MainWindow::saveToFile(const QString &fileName)
 {
@@ -229,10 +352,34 @@ bool MainWindow::saveToFile(const QString &fileName)
     if (!file.open(QIODevice::WriteOnly))
         return false;
 
+    QWidget *w = m_tabWidget->currentWidget();
+    if (!w) {
+        file.close();
+        return false;
+    }
+
+    int width = 0, height = 0;
     QJsonObject root;
     root["type"] = "VectorialDraw";
-    root["width"] = m_image.width();
-    root["height"] = m_image.height();
+
+    QByteArray pngBytes;
+
+    QImage img = w->grab().toImage();
+    if (!img.isNull()) {
+        width  = img.width();
+        height = img.height();
+        QBuffer buf(&pngBytes);
+        buf.open(QIODevice::WriteOnly);
+        img.save(&buf, "PNG");
+        root["contentType"] = "render";
+    }
+
+    root["width"]  = width;
+    root["height"] = height;
+
+    if (!pngBytes.isEmpty()) {
+        root["image"] = QString::fromUtf8(pngBytes.toBase64());
+    }
 
     file.write(QJsonDocument(root).toJson());
     file.close();
@@ -242,7 +389,12 @@ bool MainWindow::saveToFile(const QString &fileName)
 
 bool MainWindow::exportImage(const QString &fileName)
 {
-    return m_image.save(fileName);
+    QWidget *w = m_tabWidget->currentWidget();
+    if (!w) return false;
+
+    QImage img = w->grab().toImage();
+    if (img.isNull()) return false;
+    return img.save(fileName);
 }
 
 QString MainWindow::forceExtension(const QString &fileName, const QString &ext)
@@ -255,19 +407,36 @@ void MainWindow::onActionAbout_VectorialDrawTriggered()
 {
     QString text = tr(
         "<b>VectorialDraw</b><br><br>"
-        "Application de dessin vectoriel développée avec Qt.<br><br>"
+        "Application de dessin développée avec Qt.<br><br>"
+
         "<b>Fonctionnalités actuelles :</b><br>"
-        "- Ouverture et sauvegarde de fichiers<br>"
-        "- Format propriétaire (.vdraw)<br>"
-        "- Import / export d’images standards<br><br>"
+        "- Multi-documents avec onglets<br>"
+        "- Création de nouveaux projets<br>"
+        "- Ouverture de projets existants<br>"
+        "- Zone de dessin interactive (pinceau)<br>"
+        "- Annulation et rétablissement (Undo / Redo)<br>"
+        "- Import d'images comme fond de dessin<br>"
+        "- Barre d'outils verticale (outils graphiques)<br>"
+        "- Sauvegarde au format propriétaire (.vdraw) avec image embarquée<br>"
+        "- Export aux formats PNG, JPG, BMP, SVG<br><br>"
+
         "<b>Formats supportés :</b><br>"
         "- VectorialDraw (*.vdraw)<br>"
         "- PNG (*.png)<br>"
         "- JPEG (*.jpg)<br>"
         "- BMP (*.bmp)<br>"
         "- SVG (*.svg)<br><br>"
-        "Projet IHM"
+
+        "Projet IHM – 2025/2026"
         );
 
     QMessageBox::about(this, tr("About VectorialDraw"), text);
+}
+
+void MainWindow::closeEvent(QCloseEvent *e)
+{
+    if (!maybeSave())
+        e->ignore();
+    else
+        e->accept();
 }

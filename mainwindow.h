@@ -6,6 +6,8 @@
 #include <QMainWindow>
 #include <QImage>
 
+class QTabWidget;
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -18,10 +20,8 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-
-
-
 private slots:
+    void onActionNewTriggered();
     void onActionOpenTriggered();
     void onActionSaveTriggered();
     void onActionSaveAsTriggered();
@@ -34,6 +34,8 @@ private:
     bool maybeSave();
     void closeCurrentDocument();
     QString forceExtension(const QString &fileName, const QString &ext);
+    void updateActions();
+    void closeEvent(QCloseEvent *e) override;
 
 private:
     Ui::MainWindow *ui;
@@ -43,5 +45,8 @@ private:
     bool    m_isModified = false;
     bool    m_hasDocument = false;
 
+    QTabWidget *m_tabWidget = nullptr;
+    int m_untitledCount = 1;
 };
+
 #endif // MAINWINDOW_H

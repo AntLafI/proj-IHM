@@ -15,6 +15,8 @@ ImageViewer::ImageViewer(QWidget *parent)
 
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
     setResizeAnchor(QGraphicsView::AnchorUnderMouse);
+
+    setDragMode(QGraphicsView::ScrollHandDrag);
 }
 
 bool ImageViewer::loadImage(const QString &fileName)
@@ -25,6 +27,18 @@ bool ImageViewer::loadImage(const QString &fileName)
 
     m_item->setPixmap(pixmap);
     m_scene->setSceneRect(pixmap.rect());
+    m_hasPixmap = true;
+
+    fitInView(m_item, Qt::KeepAspectRatio);
+    return true;
+}
+
+bool ImageViewer::setPixmap(const QPixmap &pm)
+{
+    if (pm.isNull()) return false;
+    m_item->setPixmap(pm);
+    m_scene->setSceneRect(pm.rect());
+    m_hasPixmap = true;
     fitInView(m_item, Qt::KeepAspectRatio);
     return true;
 }
@@ -44,4 +58,11 @@ void ImageViewer::wheelEvent(QWheelEvent *event)
         scale(factor, factor);
     else
         scale(1.0 / factor, 1.0 / factor);
+}
+
+void ImageViewer::resizeEvent(QResizeEvent *event)
+{
+    QGraphicsView::resizeEvent(event);
+    if (m_hasPixmap && m_item)
+        fitInView(m_item, Qt::KeepAspectRatio);
 }
