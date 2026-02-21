@@ -17,6 +17,7 @@ public:
 
 signals:
     void circleToolClicked();
+    void rectToolClicked();
     void eraserToolClicked();
 
 private:

@@ -43,6 +43,10 @@ MainWindow::MainWindow(QWidget *parent)
         auto *area = qobject_cast<RenderArea*>(m_tabWidget->currentWidget());
         if (area) area->setTool(RenderArea::Eraser);
     });
+    connect(myScrollBar, &ScrollBar::rectToolClicked, this, [this]{
+        auto *area = qobject_cast<RenderArea*>(m_tabWidget->currentWidget());
+        if (area) area->setTool(RenderArea::Rect);
+    });
 
     connect(m_tabWidget, &QTabWidget::tabCloseRequested, this,
             [this](int idx){
