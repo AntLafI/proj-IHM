@@ -11,13 +11,15 @@
 #include <QVector>
 #include <QSize>
 #include <QRect>
+#include <QFont>
+#include <QString>
 
 class RenderArea : public QWidget, private Ui::RenderArea
 {
     Q_OBJECT
 
 public:
-    enum Tool { Freehand, Circle, Rect, Eraser };
+    enum Tool { Freehand, Circle, Rect, Text, Eraser };
 
     explicit RenderArea(QWidget *parent = nullptr);
 
@@ -61,6 +63,15 @@ private:
     QVector<QRect> m_rects;
     QVector<QRect> m_redoRects;
 
+    struct TextItem {
+        QPoint pos;
+        QString text;
+        QFont font;
+        QColor color;
+    };
+    QVector<TextItem> m_texts;
+    QVector<TextItem> m_redoTexts;
+
     Tool m_tool = Freehand;
 
     QSize m_baseSize;
@@ -68,10 +79,11 @@ private:
     QPoint m_pressPos;
 
     struct EraseOp {
-        enum Kind { Stroke, Circle, Rect } kind;
+        enum Kind { Stroke, Circle, Rect, Text } kind;
         int index = -1;
         QPolygon poly;
         QRect rect;
+        TextItem txt;
     };
     QVector<EraseOp> m_eraseHistory;
     QVector<EraseOp> m_eraseRedo;

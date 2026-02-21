@@ -46,6 +46,8 @@ ScrollBar::ScrollBar(QWidget *parent)
             connect(button, &QPushButton::clicked, this, &ScrollBar::eraserToolClicked);
         else if (lower.contains("square") || lower.contains("carre"))
             connect(button, &QPushButton::clicked, this, &ScrollBar::rectToolClicked);
+        else if (lower.contains("tletter"))
+            connect(button, &QPushButton::clicked, this, &ScrollBar::textToolClicked);
     }
 
     scrollArea->setWidget(container);

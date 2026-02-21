@@ -3,6 +3,8 @@
 #include <QColor>
 #include <QPalette>
 #include <QtMath>
+#include <QInputDialog>
+#include <QFontMetrics>
 
 RenderArea::RenderArea(QWidget *parent)
     : QWidget(parent)
@@ -36,11 +38,12 @@ bool RenderArea::canUndo() const{
     return !m_strokes.isEmpty() || !m_currentStroke.isEmpty()
     || !m_circles.isEmpty() || !m_currentCircle.isNull()
         || !m_rects.isEmpty()   || !m_currentRect.isNull()
+        || !m_texts.isEmpty()
         || !m_eraseHistory.isEmpty();
 }
 
 bool RenderArea::canRedo() const{
-    return !m_redoStrokes.isEmpty() || !m_redoCircles.isEmpty() || !m_redoRects.isEmpty() || !m_eraseRedo.isEmpty();
+    return !m_redoStrokes.isEmpty() || !m_redoCircles.isEmpty() || !m_redoRects.isEmpty() || !m_redoTexts.isEmpty() || !m_eraseRedo.isEmpty();
 }
 
 void RenderArea::undo(){
@@ -52,9 +55,12 @@ void RenderArea::undo(){
         } else if (op.kind == EraseOp::Circle) {
             int ins = qBound(0, op.index, m_circles.size());
             m_circles.insert(ins, op.rect);
-        } else {
+        } else if (op.kind == EraseOp::Rect) {
             int ins = qBound(0, op.index, m_rects.size());
             m_rects.insert(ins, op.rect);
+        } else {
+            int ins = qBound(0, op.index, m_texts.size());
+            m_texts.insert(ins, op.txt);
         }
         m_eraseRedo.append(op);
         update();
@@ -106,6 +112,13 @@ void RenderArea::undo(){
         update();
         notifyState();
         emit modified();
+        return;
+    }
+    if (!m_texts.isEmpty()) {
+        m_redoTexts.append(m_texts.takeLast());
+        update();
+        notifyState();
+        emit modified();
     }
 }
 
@@ -128,12 +141,20 @@ void RenderArea::redo(){
                     if (m_circles[i] == op.rect) { m_circles.remove(i); break; }
                 }
             }
-        } else {
+        } else if (op.kind == EraseOp::Rect) {
             if (op.index >= 0 && op.index < m_rects.size())
                 m_rects.remove(op.index);
             else {
                 for (int i = m_rects.size()-1; i >= 0; --i) {
                     if (m_rects[i] == op.rect) { m_rects.remove(i); break; }
+                }
+            }
+        } else {
+            if (op.index >= 0 && op.index < m_texts.size())
+                m_texts.remove(op.index);
+            else {
+                for (int i = m_texts.size()-1; i >= 0; --i) {
+                    if (m_texts[i].pos == op.txt.pos && m_texts[i].text == op.txt.text) { m_texts.remove(i); break; }
                 }
             }
         }
@@ -163,6 +184,13 @@ void RenderArea::redo(){
         update();
         notifyState();
         emit modified();
+        return;
+    }
+    if (!m_redoTexts.isEmpty()) {
+        m_texts.append(m_redoTexts.takeLast());
+        update();
+        notifyState();
+        emit modified();
     }
 }
 
@@ -179,8 +207,27 @@ void RenderArea::mousePressEvent(QMouseEvent *event){
     } else if (m_tool == Rect) {
         m_pressPos = event->pos();
         m_currentRect = QRect();
+    } else if (m_tool == Text) {
+        const QString s = QInputDialog::getText(this, tr("Texte"), tr("Entrer le texte:"));
+        if (!s.isEmpty()) {
+            TextItem t;
+            t.pos = event->pos();
+            t.text = s;
+            QFont f; f.setPointSize(16);
+            t.font = f;
+            t.color = pen.color();
+            m_texts.append(t);
+            m_redoTexts.clear();
+            m_eraseRedo.clear();
+            update();
+            notifyState();
+            emit modified();
+        }
     } else {
         eraseAt(event->pos());
+        update();
+        notifyState();
+        emit modified();
     }
     update();
     notifyState();
@@ -203,7 +250,7 @@ void RenderArea::mouseMoveEvent(QMouseEvent *event){
         const QPoint p0 = m_pressPos;
         const QPoint p1 = event->pos();
         m_currentRect = QRect(p0, p1).normalized();
-    } else {
+    } else if (m_tool == Eraser) {
         eraseAt(event->pos());
     }
     update();
@@ -242,7 +289,7 @@ void RenderArea::mouseReleaseEvent(QMouseEvent *event){
             notifyState();
             emit modified();
         }
-    } else {
+    } else if (m_tool == Eraser) {
         eraseAt(event->pos());
         update();
         notifyState();
@@ -294,6 +341,12 @@ void RenderArea::renderToPainter(QPainter *p, const QSize &targetSize) const{
     if (!m_currentRect.isNull())
         p->drawRect(m_currentRect);
 
+    for (const TextItem &t : m_texts) {
+        p->setPen(t.color);
+        p->setFont(t.font);
+        p->drawText(t.pos, t.text);
+    }
+
     p->restore();
 }
 
@@ -332,6 +385,7 @@ void RenderArea::eraseAt(const QPoint &pt){
             m_redoRects.clear();
             m_redoCircles.clear();
             m_redoStrokes.clear();
+            m_redoTexts.clear();
             m_eraseRedo.clear();
             emit modified();
             return;
@@ -349,6 +403,7 @@ void RenderArea::eraseAt(const QPoint &pt){
             m_redoRects.clear();
             m_redoCircles.clear();
             m_redoStrokes.clear();
+            m_redoTexts.clear();
             m_eraseRedo.clear();
             emit modified();
             return;
@@ -358,8 +413,8 @@ void RenderArea::eraseAt(const QPoint &pt){
     const int radius = 6;
     for (int i = m_strokes.size() - 1; i >= 0; --i) {
         const QPolygon &poly = m_strokes[i];
-        for (const QPoint &p : poly) {
-            if (qAbs(p.x() - basePt.x()) <= radius && qAbs(p.y() - basePt.y()) <= radius) {
+        for (const QPoint &p0 : poly) {
+            if (qAbs(p0.x() - basePt.x()) <= radius && qAbs(p0.y() - basePt.y()) <= radius) {
                 EraseOp op;
                 op.kind = EraseOp::Stroke;
                 op.index = i;
@@ -369,10 +424,33 @@ void RenderArea::eraseAt(const QPoint &pt){
                 m_redoRects.clear();
                 m_redoCircles.clear();
                 m_redoStrokes.clear();
+                m_redoTexts.clear();
                 m_eraseRedo.clear();
                 emit modified();
                 return;
             }
+        }
+    }
+
+    for (int i = m_texts.size() - 1; i >= 0; --i) {
+        const TextItem &t = m_texts[i];
+        QFontMetrics fm(t.font);
+        QRect br = fm.boundingRect(t.text);
+        br.moveTopLeft(t.pos);
+        if (br.contains(basePt)) {
+            EraseOp op;
+            op.kind = EraseOp::Text;
+            op.index = i;
+            op.txt = t;
+            m_texts.remove(i);
+            m_eraseHistory.append(op);
+            m_redoRects.clear();
+            m_redoCircles.clear();
+            m_redoStrokes.clear();
+            m_redoTexts.clear();
+            m_eraseRedo.clear();
+            emit modified();
+            return;
         }
     }
 }

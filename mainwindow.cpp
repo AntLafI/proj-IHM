@@ -47,6 +47,10 @@ MainWindow::MainWindow(QWidget *parent)
         auto *area = qobject_cast<RenderArea*>(m_tabWidget->currentWidget());
         if (area) area->setTool(RenderArea::Rect);
     });
+    connect(myScrollBar, &ScrollBar::textToolClicked, this, [this]{
+        auto *area = qobject_cast<RenderArea*>(m_tabWidget->currentWidget());
+        if (area) area->setTool(RenderArea::Text);
+    });
 
     connect(m_tabWidget, &QTabWidget::tabCloseRequested, this,
             [this](int idx){
@@ -496,12 +500,16 @@ void MainWindow::onActionAbout_VectorialDrawTriggered()
         "- Multi-documents avec onglets<br>"
         "- Création de nouveaux projets<br>"
         "- Ouverture de projets existants<br>"
-        "- Zone de dessin interactive (pinceau)<br>"
-        "- Annulation et rétablissement (Undo / Redo)<br>"
+        "- Dessin libre (pinceau vert, point par point)<br>"
+        "- Dessin de formes vectorielles (cercles, rectangles)<br>"
+        "- Insertion de texte<br>"
+        "- Gomme (suppression d'objets vectoriels)<br>"
+        "- Annulation et rétablissement (Undo / Redo) pour toutes les opérations<br>"
         "- Import d'images comme fond de dessin<br>"
-        "- Barre d'outils verticale (outils graphiques)<br>"
+        "- Mise à l'échelle automatique pour le redimensionnement de la fenêtre<br>"
+        "- Barre d'outils verticale (sélection d'outils)<br>"
         "- Sauvegarde au format propriétaire (.vdraw) avec image embarquée<br>"
-        "- Export aux formats PNG, JPG, BMP, SVG<br><br>"
+        "- Export aux formats PNG, JPG, BMP et SVG<br><br>"
 
         "<b>Formats supportés :</b><br>"
         "- VectorialDraw (*.vdraw)<br>"
@@ -512,6 +520,5 @@ void MainWindow::onActionAbout_VectorialDrawTriggered()
 
         "Projet IHM – 2025/2026"
         );
-
     QMessageBox::about(this, tr("About VectorialDraw"), text);
 }
