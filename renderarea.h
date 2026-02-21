@@ -9,12 +9,16 @@
 #include <QPolygon>
 #include <QVector>
 #include <QSize>
+#include <QList>
+#include <QRect>
 
 class RenderArea : public QWidget, private Ui::RenderArea
 {
     Q_OBJECT
 
 public:
+    enum Tool { Freehand, Circle, Eraser };
+
     explicit RenderArea(QWidget *parent = nullptr);
 
     void setBackgroundImage(const QImage &img);
@@ -22,6 +26,7 @@ public:
     bool canUndo() const;
     bool canRedo() const;
     void renderToPainter(QPainter *p, const QSize &size) const;
+    void setTool(Tool t);
 
 public slots:
     void undo();
@@ -47,13 +52,29 @@ private:
     QVector<QPolygon> m_strokes;
     QVector<QPolygon> m_redoStrokes;
 
+    Tool m_tool = Freehand;
+
+    QSize m_baseSize;
+
+    QPoint m_pressPos;
+    QRect m_currentCircle;
+    QVector<QRect> m_circles;
+    QVector<QRect> m_redoCircles;
+
+    struct EraseOp {
+        enum Kind { Stroke, Circle } kind;
+        int index = -1;
+        QPolygon poly;
+        QRect rect;
+    };
+    QVector<EraseOp> m_eraseHistory;
+    QVector<EraseOp> m_eraseRedo;
+
     bool m_lastCanUndo = false;
     bool m_lastCanRedo = false;
 
-    // Taille de référence du canvas au moment du premier tracé
-    QSize m_baseSize;
-
     void notifyState();
+    void eraseAt(const QPoint &pt);
 };
 
 #endif // RENDERAREA_H

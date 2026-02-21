@@ -15,6 +15,10 @@ public:
     explicit ScrollBar(QWidget *parent = nullptr);
     ~ScrollBar();
 
+signals:
+    void circleToolClicked();
+    void eraserToolClicked();
+
 private:
     Ui::ScrollBar *ui;
 };

@@ -3,10 +3,9 @@
 
 #include <QPushButton>
 #include <QPixmap>
-
 #include <QScrollArea>
 #include <QVBoxLayout>
-
+#include <QIcon>
 
 ScrollBar::ScrollBar(QWidget *parent)
     : QWidget(parent)
@@ -16,7 +15,7 @@ ScrollBar::ScrollBar(QWidget *parent)
 
     QVBoxLayout *selfLayout = new QVBoxLayout(this);
 
-    QScrollArea *scrollArea = new QScrollArea() ;
+    QScrollArea *scrollArea = new QScrollArea();
     QWidget *container = new QWidget();
     QVBoxLayout *layout = new QVBoxLayout(container);
 
@@ -33,16 +32,17 @@ ScrollBar::ScrollBar(QWidget *parent)
                         ":/new/icons/images/unzoom.png",
                         ":/new/icons/images/zoom_tool.png"} ;
 
-
     for(const QString &path : logo) {
         QPushButton *button = new QPushButton(this);
-
-        button-> setIcon((QIcon(path))) ;
+        button->setIcon(QIcon(path));
         button->setIconSize(QSize(50, 50));
         button->setFixedSize(60, 60);
-
         layout->addWidget(button);
 
+        if (path.contains("circle.png"))
+            connect(button, &QPushButton::clicked, this, &ScrollBar::circleToolClicked);
+        if (path.contains("gomme.png"))
+            connect(button, &QPushButton::clicked, this, &ScrollBar::eraserToolClicked);
     }
 
     scrollArea->setWidget(container);
@@ -50,7 +50,6 @@ ScrollBar::ScrollBar(QWidget *parent)
     scrollArea->setBackgroundRole(QPalette::Dark);
 
     selfLayout->addWidget(scrollArea);
-
 }
 
 ScrollBar::~ScrollBar()

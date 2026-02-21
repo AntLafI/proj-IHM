@@ -35,6 +35,15 @@ MainWindow::MainWindow(QWidget *parent)
     m_tabWidget = new QTabWidget(this);
     m_tabWidget->setTabsClosable(true);
 
+    connect(myScrollBar, &ScrollBar::circleToolClicked, this, [this]{
+        auto *area = qobject_cast<RenderArea*>(m_tabWidget->currentWidget());
+        if (area) area->setTool(RenderArea::Circle);
+    });
+    connect(myScrollBar, &ScrollBar::eraserToolClicked, this, [this]{
+        auto *area = qobject_cast<RenderArea*>(m_tabWidget->currentWidget());
+        if (area) area->setTool(RenderArea::Eraser);
+    });
+
     connect(m_tabWidget, &QTabWidget::tabCloseRequested, this,
             [this](int idx){
                 int prev = m_tabWidget->currentIndex();
@@ -155,9 +164,6 @@ void MainWindow::onActionNewTriggered()
 
 void MainWindow::onActionOpenTriggered()
 {
-    if (!maybeSave())
-        return;
-
     QString fileName = QFileDialog::getOpenFileName(
         this,
         tr("Open"),
@@ -493,14 +499,14 @@ void MainWindow::onActionAbout_VectorialDrawTriggered()
         "- Sauvegarde au format propriétaire (.vdraw) avec image embarquée<br>"
         "- Export aux formats PNG, JPG, BMP, SVG<br><br>"
 
-                       "<b>Formats supportés :</b><br>"
-                       "- VectorialDraw (*.vdraw)<br>"
-                       "- PNG (*.png)<br>"
-                       "- JPEG (*.jpg)<br>"
-                       "- BMP (*.bmp)<br>"
-                       "- SVG (*.svg)<br><br>"
+        "<b>Formats supportés :</b><br>"
+        "- VectorialDraw (*.vdraw)<br>"
+        "- PNG (*.png)<br>"
+        "- JPEG (*.jpg)<br>"
+        "- BMP (*.bmp)<br>"
+        "- SVG (*.svg)<br><br>"
 
-                       "Projet IHM – 2025/2026"
+        "Projet IHM – 2025/2026"
         );
 
     QMessageBox::about(this, tr("About VectorialDraw"), text);
